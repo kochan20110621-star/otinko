@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>昼と夜のテーマ切り替え</title>
+<style>
+  /* =========================================
+     1. 色の変数設定（昼と夜）
+     この変数が切り替わることで全体の色が滑らかに変化します
+  ========================================= */
+  :root {
+    --page-bg: #e6f7ff;         /* 画面全体の背景（昼） */
+    --text-color: #333;         /* 文字色（昼） */
+    --sky-color: #87ceeb;       /* イラストの空の色（昼） */
+    --sun-y: 50px;              /* 太陽の縦位置（昼は上） */
+    --moon-y: 350px;            /* 月の縦位置（昼は下に隠れる） */
+    --stars-opacity: 0;         /* 星の透明度（昼は見えない） */
+    --cloud-opacity: 1;         /* 雲の透明度（昼は見える） */
+    --switch-bg: #a5d8ff;       /* スイッチの背景（昼） */
+  }
+
+  /* ダークモード（夜）の時の設定 */
+  body.dark-mode {
+    --page-bg: #11111b;         /* 画面全体の背景（夜） */
+    --text-color: #e6e6e6;      /* 文字色（夜） */
+    --sky-color: #1a1a3a;       /* イラストの空の色（夜） */
+    --sun-y: 350px;             /* 太陽の縦位置（夜は下に沈む） */
+    --moon-y: 60px;             /* 月の縦位置（夜は上） */
+    --stars-opacity: 1;         /* 星の透明度（夜は光る） */
+    --cloud-opacity: 0.1;       /* 雲の透明度（夜は暗くなる） */
+    --switch-bg: #3b3b5c;       /* スイッチの背景（夜） */
+  }
+
+  /* =========================================
+     2. 画面全体のレイアウト
+  ========================================= */
+  body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--page-bg);
+    color: var(--text-color);
+    font-family: 'Arial', sans-serif;
+    transition: background-color 0.8s ease, color 0.8s ease;
+  }
+
+  h1 {
+    margin-bottom: 40px;
+    font-size: 24px;
+    letter-spacing: 2px;
+  }
+
+  /* =========================================
+     3. イラスト部分（窓）
+  ========================================= */
+  .window {
+    width: 300px;
+    height: 300px;
+    border-radius: 50%; /* 丸い窓 */
+    background-color: var(--sky-color);
+    position: relative;
+    overflow: hidden; /* 窓からはみ出た部分は隠す */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2) inset, 
+                0 20px 40px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.8s ease;
+    margin-bottom: 40px;
+  }
+
+  /* 太陽 */
+  .sun {
+    width: 80px;
+    height: 80px;
+    background-color: #ffd700;
+    border-radius: 50%;
+    position: absolute;
+    left: 110px;
+    top: var(--sun-y);
+    box-shadow: 0 0 40px #ffdf00;
+    transition: top 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
+  }
+
+  /* 月（三日月の形をbox-shadowで作る） */
+  .moon {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background-color: transparent;
+    box-shadow: 20px -10px 0 0 #f6f1d5; /* ここが三日月の本体 */
+    position: absolute;
+    left: 80px;
+    top: var(--moon-y);
+    transition: top 0.8s cubic-bezier(0.4, 0.0, 0.2, 1);
+  }
+
+  /* 雲 */
+  .cloud {
+    width: 120px;
+    height: 40px;
+    background: #fff;
+    border-radius: 20px;
+    position: absolute;
+    bottom: 40px;
+    left: 40px;
+    opacity: var(--cloud-opacity);
+    transition: opacity 0.8s ease;
+  }
+  .cloud::before {
+    content: '';
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    background: #fff;
+    border-radius: 50%;
+    top: -30px;
+    left: 20px;
+  }
+  .cloud::after {
+    content: '';
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background: #fff;
+    border-radius: 50%;
+    top: -15px;
+    left: 70px;
+  }
+
+  /* 星（CSSの影を使って複数の点を描画） */
+  .stars {
+    width: 3px;
+    height: 3px;
+    background: transparent;
+    border-radius: 50%;
+    position: absolute;
+    top: 50px;
+    left: 60px;
+    box-shadow: 
+      100px 20px #fff,
+      180px 80px #fff,
+      40px 120px #fff,
+      220px 150px #fff,
+      140px 180px #fff;
+    opacity: var(--stars-opacity);
+    transition: opacity 0.8s ease;
+  }
+
+  /* =========================================
+     4. こだわりのトグルボタン（スイッチ）
+  ========================================= */
+  .toggle-btn {
+    width: 100px;
+    height: 50px;
+    background-color: var(--switch-bg);
+    border-radius: 25px;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    padding: 5px;
+    box-shadow: inset 0 3px 6px rgba(0,0,0,0.2);
+    transition: background-color 0.5s ease;
+    outline: none;
+  }
+
+  /* スイッチの動く丸いツマミ */
+  .toggle-thumb {
+    width: 40px;
+    height: 40px;
+    background-color: #fff;
+    border-radius: 50%;
+    position: absolute;
+    top: 5px;
+    left: 5px; /* 昼は左 */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+    transition: left 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55), transform 0.5s;
+    /* ↑ バネのように少しビヨーンとなるアニメーション（cubic-bezier） */
+  }
+
+  /* ダークモード時のツマミの位置（右へ移動） */
+  body.dark-mode .toggle-thumb {
+    left: 55px; /* 右に移動 */
+    transform: rotate(360deg); /* 移動しながら1回転する */
+  }
+
+</style>
+</head>
+<body>
+
+  <h1>Mode Switch</h1>
+
+  <!-- イラスト部分（丸い窓） -->
+  <div class="window">
+    <div class="stars"></div>
+    <div class="sun"></div>
+    <div class="moon"></div>
+    <div class="cloud"></div>
+  </div>
+
+  <!-- こだわりのスイッチボタン -->
+  <button class="toggle-btn" id="themeSwitch" aria-label="テーマ切り替え">
+    <div class="toggle-thumb" id="thumbIcon">☀️</div>
+  </button>
+
+  <script>
+    // JavaScript: ボタンをクリックしたときの処理
+    const themeSwitch = document.getElementById('themeSwitch');
+    const thumbIcon = document.getElementById('thumbIcon');
+
+    themeSwitch.addEventListener('click', () => {
+      // bodyに "dark-mode" というクラスをつけたり外したりする
+      document.body.classList.toggle('dark-mode');
+
+      // スイッチの中のアイコンを太陽と月に切り替える
+      if (document.body.classList.contains('dark-mode')) {
+        thumbIcon.textContent = '🌙';
+      } else {
+        thumbIcon.textContent = '☀️';
+      }
+    });
+  </script>
+
+</body>
+</html>
